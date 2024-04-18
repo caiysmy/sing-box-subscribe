@@ -68,9 +68,9 @@
       "type": "selector",
       "tag": "🪜 Proxy",
       "outbounds": [
-        "🚀 Direct",
+        "{all}",
         "🚗 Auto",
-        "{all}"
+        "🚀 Direct"
       ]
     },
     {

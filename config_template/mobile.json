@@ -1,0 +1,409 @@
+{
+  "log": {
+    "level": "debug",
+    "timestamp": true
+  },
+  "dns": {
+    "servers": [
+      {
+        "tag": "proxy",
+        "address": "https://cloudflare-dns.com/dns-query",
+        "address_resolver": "local",
+        "client_subnet": "223.5.5.5"
+      },
+      {
+        "tag": "local",
+        "address": "local",
+        "detour": "🚀 Direct"
+      },
+      {
+        "tag": "fakeip",
+        "address": "fakeip"
+      }
+    ],
+    "rules": [
+      {
+        "outbound": "any",
+        "server": "local"
+      },
+      {
+        "query_type": [
+          "A",
+          "AAAA"
+        ],
+        "server": "fakeip"
+      }
+    ],
+    "fakeip": {
+      "enabled": true,
+      "inet4_range": "198.18.0.0/15",
+      "inet6_range": "fc00::/18"
+    },
+    "independent_cache": true
+  },
+  "inbounds": [
+    {
+      "type": "tun",
+      "inet4_address": "172.19.0.1/30",
+      "inet6_address": "fdfe:dcba:9876::1/126",
+      "auto_route": true,
+      "strict_route": true,
+      "inet4_route_exclude_address": [
+        "192.168.0.0/16"
+      ],
+      "platform": {
+        "http_proxy": {
+          "enabled": true,
+          "server": "127.0.0.1",
+          "server_port": 8080
+        }
+      }
+    },
+    {
+      "type": "http",
+      "listen": "0.0.0.0",
+      "listen_port": 8080
+    },
+    {
+      "type": "socks",
+      "listen": "0.0.0.0",
+      "listen_port": 1080
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "selector",
+      "tag": "🪜 Proxy",
+      "outbounds": [
+        "🚀 Direct",
+        "🚗 Auto",
+        "{all}"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🔍 Google",
+      "outbounds": [
+        "🪜 Proxy",
+        "🚗 Auto",
+        "{all}"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "✈️ Telegram",
+      "outbounds": [
+        "🪜 Proxy",
+        "🚗 Auto",
+        "{all}"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🤖 OpenAI",
+      "outbounds": [
+        "🚀 Direct",
+        "{all}"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🧩 Microsoft",
+      "outbounds": [
+        "🪜 Proxy",
+        "🚀 Direct",
+        "🚗 Auto",
+        "{all}"
+      ]
+    },
+    {
+      "type": "urltest",
+      "tag": "🚗 Auto",
+      "outbounds": [
+        "{all}"
+      ],
+      "url": "https://www.gstatic.com/generate_204",
+      "interval": "5m",
+      "tolerance": 50
+    },
+    {
+      "type": "direct",
+      "tag": "🚀 Direct"
+    },
+    {
+      "type": "dns",
+      "tag": "Dns"
+    },
+    {
+      "type": "block",
+      "tag": "Block"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "type": "logical",
+        "mode": "or",
+        "rules": [
+          {
+            "protocol": "dns"
+          },
+          {
+            "port": 53
+          }
+        ],
+        "outbound": "Dns"
+      },
+      {
+        "ip_is_private": true,
+        "outbound": "🚀 Direct"
+      },
+      {
+        "clash_mode": "Direct",
+        "outbound": "🚀 Direct"
+      },
+      {
+        "clash_mode": "Global",
+        "outbound": "🪜 Proxy"
+      },
+      {
+        "type": "logical",
+        "mode": "or",
+        "rules": [
+          {
+            "port": 853
+          },
+          {
+            "network": "udp",
+            "port": 443
+          },
+          {
+            "protocol": "stun"
+          }
+        ],
+        "outbound": "Block"
+      },
+      {
+        "type": "logical",
+        "mode": "or",
+        "rules": [
+          {
+            "domain": [
+              "caiysmy.love"
+            ]
+          },
+          {
+            "domain_suffix": [
+              ".caiysmy.love"
+            ]
+          }
+        ],
+        "outbound": "🚀 Direct"
+      },
+      {
+        "rule_set": "geosite-openai",
+        "outbound": "🤖 OpenAI"
+      },
+      {
+        "rule_set": [
+          "geosite-onedrive"
+        ],
+        "outbound": "🪜 Proxy"
+      },
+      {
+        "rule_set": [
+          "geosite-google",
+          "geosite-google@cn",
+          "geosite-github",
+          "geosite-youtube",
+          "geosite-youtube@cn"
+        ],
+        "outbound": "🔍 Google"
+      },
+      {
+        "rule_set": "geoip-google",
+        "outbound": "🔍 Google"
+      },
+      {
+        "rule_set": [
+          "geosite-telegram",
+          "geosite-twitter",
+          "geosite-facebook"
+        ],
+        "outbound": "✈️ Telegram"
+      },
+      {
+        "rule_set": [
+          "geoip-telegram",
+          "geoip-twitter",
+          "geoip-facebook"
+        ],
+        "outbound": "✈️ Telegram"
+      },
+      {
+        "rule_set": "geosite-microsoft",
+        "outbound": "🧩 Microsoft"
+      },
+      {
+        "rule_set": "geosite-cn",
+        "outbound": "🚀 Direct"
+      },
+      {
+        "rule_set": "geoip-cn",
+        "outbound": "🚀 Direct"
+      }
+    ],
+    "final": "🪜 Proxy",
+    "auto_detect_interface": true,
+    "rule_set": [
+      {
+        "type": "remote",
+        "tag": "geosite-cn",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geosite/cn.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geoip-cn",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geoip/cn.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-openai",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geosite/openai.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-onedrive",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geosite/onedrive.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-google",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geosite/google.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-google@cn",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geosite/google%40cn.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geoip-google",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geoip/google.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-github",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geosite/github.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-youtube",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geosite/youtube.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-youtube@cn",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geosite/youtube%40cn.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-microsoft",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geosite/microsoft.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-telegram",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geosite/telegram.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-twitter",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geosite/twitter.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-facebook",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geosite/facebook.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geoip-telegram",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geoip/telegram.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geoip-twitter",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geoip/twitter.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geoip-facebook",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/caiysmy/meta-rules-dat@sing/geo/geoip/facebook.srs",
+        "download_detour": "🔍 Google",
+        "update_interval": "3d"
+      }
+    ]
+  },
+  "experimental": {
+    "clash_api": {
+      "external_controller": "0.0.0.0:9090",
+      "external_ui_download_url": "https://github.com/caiysmy/metacubexd/archive/gh-pages.zip",
+      "external_ui_download_detour": "🔍 Google",
+      "external_ui": "ui"
+    },
+    "cache_file": {
+      "enabled": true,
+      "store_fakeip": false
+    }
+  }
+}
